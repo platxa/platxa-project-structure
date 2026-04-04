@@ -181,6 +181,11 @@ This keeps token usage low — Claude only loads references/ when the user asks 
    - Common values: `ruff format --check .` / `ruff format .`, `prettier --check .` / `prettier --write .`, `gofmt -l .` / `gofmt -w .`, `cargo fmt --check` / `cargo fmt`
    - Write to `.claude/skills/format-check/SKILL.md`
 
+4. **typecheck** (if type checker detected):
+   - Substitute `{{TYPE_CHECKER}}` and `{{TYPE_CHECK_COMMAND}}`
+   - Common values: `pyright .`, `tsc --noEmit`, `go vet ./...`
+   - Write to `.claude/skills/typecheck/SKILL.md`
+
 Skip existing files — never overwrite.
 
 ### Step 5: Generate .claude/agents/ Files
