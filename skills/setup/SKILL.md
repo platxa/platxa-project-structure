@@ -77,7 +77,7 @@ When generating in **always-on mode**, strip the `paths:` YAML frontmatter from 
    - `{{TYPE_CHECKER}}` → type checker name
    - `{{FORMATTER}}` → formatter name
    - `{{TEST_FRAMEWORK}}` → test framework name
-   - `{{DATABASE_RULES}}` → database-specific rules (if databases detected)
+   - `{{DATABASE_RULES}}` → database-specific rules from `templates/rules/database-{type}.md` (postgresql, mongodb, redis). If multiple databases detected, concatenate all matching templates. If none detected, substitute with empty string.
    - `{{SHARP_EDGES}}` → formatted sharp edge findings for this module
 
 3. Format sharp edges as:
