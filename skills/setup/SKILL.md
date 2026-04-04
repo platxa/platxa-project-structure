@@ -37,6 +37,25 @@ Score the project 0-100 based on existing structure:
 
 For each module detected by the analyzer:
 
+**Activation mode selection**: Determine whether rules should be path-scoped or always-on based on project size:
+
+| Condition | Mode | Frontmatter |
+|-----------|------|-------------|
+| Total modules < 3 | Always-on | No `paths:` frontmatter — rule loads every session |
+| Total modules >= 3 | Path-scoped | Include `paths:` frontmatter targeting the module's files |
+| Monorepo (any size) | Path-scoped | Always path-scoped — monorepos have too many files for always-on |
+
+Log the activation mode decision in the final report:
+```
+Activation mode: path-scoped (5 modules detected)
+```
+or:
+```
+Activation mode: always-on (2 modules — all rules load every session)
+```
+
+When generating in **always-on mode**, strip the `paths:` YAML frontmatter from the template output. The rule content stays the same, only the scoping changes.
+
 **Monorepo handling**: If `monorepo.detected` is true, each workspace package is a module. Use the full relative path from the repo root (e.g., `packages/frontend`) as `{{MODULE_PATH}}`. For monorepos with mixed languages (e.g., TypeScript frontend + Python API), select the template matching **each package's language**, not the project-wide primary language.
 
 1. Select the template matching the module's language:
