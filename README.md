@@ -13,12 +13,15 @@ Run one command on any project:
 The plugin:
 
 1. **Detects** your tech stack (language, framework, test runner, linter, databases)
-2. **Analyzes** every module (file count, LOC, complexity score)
-3. **Finds** sharp edges (dangerous patterns, security risks, high TODO density)
-4. **Generates** `.claude/rules/` with path-scoped rules per module
-5. **Creates** project-specific skills (`run-tests`, `lint`)
-6. **Audits** existing CLAUDE.md (flags bloat >200 lines) or generates one
-7. **Reports** a before/after structure score (0-100%)
+2. **Detects** monorepo patterns (pnpm, npm, yarn workspaces, Go workspaces, Cargo, Lerna, Nx)
+3. **Analyzes** every module (file count, LOC, complexity score)
+4. **Finds** sharp edges (dangerous patterns, security risks, high TODO density)
+5. **Generates** `.claude/rules/` with path-scoped rules per module
+6. **Generates** `.claude/skills/` for run-tests, lint, format-check, and typecheck
+7. **Generates** `.claude/agents/` with domain-specific subagents (security, API, database)
+8. **Audits** existing CLAUDE.md (flags bloat >200 lines) or generates one with `@import` references
+9. **Suggests** hooks for deterministic enforcement of critical patterns
+10. **Reports** a before/after structure score (0-100%)
 
 ## Install
 
@@ -34,7 +37,15 @@ Navigate to any project and run:
 /platxa-project-structure:setup
 ```
 
-Example output:
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| *(none)* | Full setup — analyze and generate everything |
+| `--dry-run` | Preview what would be created without writing any files |
+| `--audit` | Health check existing `.claude/` structure for stale rules and gaps |
+
+### Example Output
 
 ```
 +======================================================================+
@@ -44,6 +55,8 @@ Example output:
 Project: my-api
 Stack:   Python + FastAPI | pytest | ruff
 
+Activation mode: path-scoped (5 modules detected)
+
 Score:   15% → 87% (+72%)
 
 Files created:
@@ -52,18 +65,56 @@ Files created:
   ✓ .claude/rules/python.md           (paths: **/*.py)
   ✓ .claude/skills/run-tests/SKILL.md (pytest -v)
   ✓ .claude/skills/lint/SKILL.md      (ruff check --fix)
-  ✓ CLAUDE.md                         (generated — 45 lines)
+  ✓ .claude/skills/format-check/SKILL.md (ruff format)
+  ✓ .claude/skills/typecheck/SKILL.md (pyright)
+  ✓ .claude/agents/security-reviewer.md
+  ✓ .claude/agents/db-reviewer.md
+  ⊘ CLAUDE.md                         (already exists, 85 lines — OK)
+
+Skipped (already exist):
+  ⊘ .claude/rules/config.md
+
+Sharp edges documented:
+  ⚠ connectors/ssh_tunnel.py:42 — shell=True
+  ⚠ config/settings.py:29 — hardcoded password
+
+Suggested hooks (add to .claude/settings.json):
+  🔧 on_file_edit: Run ruff check on **/*.py edits
+  🔧 on_file_edit: Warn on shell=True in connectors/**
+  🔧 pre_commit: Block hardcoded credentials
+  🔧 on_file_edit: Block writes to **/migrations/**
+
+Next steps:
+  1. Review generated files and customize as needed
+  2. Review suggested hooks and add to .claude/settings.json
+  3. Commit .claude/ directory to version control
+  4. Run /platxa-project-structure:setup again after major refactors
 ```
 
 ## Supported Languages
 
-| Language | Framework Detection | Rule Template | Linter/Formatter |
-|----------|-------------------|---------------|-----------------|
-| Python | FastAPI, Django, Flask | ruff, pyright, pytest | Yes |
-| TypeScript | Next.js, Express, Nest | eslint, tsc, jest/vitest | Yes |
-| Go | Gin, Echo, stdlib | go vet, staticcheck | Yes |
-| Rust | Actix, Tokio, Axum | clippy, cargo test | Yes |
-| Other | Generic detection | Generic rules | Best-effort |
+| Language | Framework Detection | Rule Template | Database Rules | Agent Generation |
+|----------|-------------------|---------------|----------------|-----------------|
+| Python | FastAPI, Django, Flask | ✓ | PostgreSQL, MongoDB, Redis | ✓ |
+| TypeScript | Next.js (App Router/Pages), Express, NestJS | ✓ | PostgreSQL, MongoDB, Redis | ✓ |
+| Go | Gin, Echo, stdlib | ✓ | — | ✓ |
+| Rust | Actix, Tokio, Axum | ✓ | — | ✓ |
+| Other | Generic detection | ✓ | — | ✓ |
+
+## Monorepo Support
+
+The plugin detects and handles monorepos automatically:
+
+| Workspace Tool | Detection |
+|---------------|-----------|
+| pnpm | `pnpm-workspace.yaml` |
+| npm/yarn | `workspaces` in `package.json` |
+| Lerna | `lerna.json` |
+| Go | `go.work` or multiple `go.mod` files |
+| Cargo | `[workspace]` in `Cargo.toml` |
+| Nx | `nx.json` |
+
+Each workspace package becomes a separate module with its own rule file. Mixed-language monorepos (e.g., TypeScript frontend + Python API) get language-specific rules per package.
 
 ## Non-Destructive Guarantee
 
@@ -73,18 +124,26 @@ The plugin **never overwrites** existing files. If `.claude/rules/api.md` alread
 
 ```
 your-project/
-├── CLAUDE.md                    ← Generated if missing (audited if exists)
+├── CLAUDE.md                         ← Generated if missing (audited if exists)
 └── .claude/
     ├── rules/
-    │   ├── api.md               ← paths: src/api/**/*.py
-    │   ├── auth.md              ← paths: src/auth/**/*.py
-    │   ├── database.md          ← paths: src/database/**/*.py
-    │   └── python.md            ← paths: **/*.py (language-wide)
-    └── skills/
-        ├── run-tests/
-        │   └── SKILL.md         ← pytest -v
-        └── lint/
-            └── SKILL.md         ← ruff check --fix .
+    │   ├── api.md                    ← paths: src/api/**/*.py
+    │   ├── auth.md                   ← paths: src/auth/**/*.py
+    │   ├── database.md               ← paths: src/database/**/*.py
+    │   └── python.md                 ← paths: **/*.py (language-wide + framework rules)
+    ├── skills/
+    │   ├── run-tests/
+    │   │   └── SKILL.md              ← pytest -v
+    │   ├── lint/
+    │   │   └── SKILL.md              ← ruff check --fix .
+    │   ├── format-check/
+    │   │   └── SKILL.md              ← ruff format
+    │   └── typecheck/
+    │       └── SKILL.md              ← pyright .
+    └── agents/
+        ├── security-reviewer.md      ← Generated if auth module detected
+        ├── api-tester.md             ← Generated if API module detected
+        └── db-reviewer.md            ← Generated if database module detected
 ```
 
 ## How Rules Work
@@ -107,15 +166,46 @@ paths:
 - **hardcoded secret** at `config.py:42` — use environment variable
 ```
 
+For small projects (fewer than 3 modules), rules are generated without `paths:` frontmatter so they load every session.
+
+## How Hooks Work
+
+The plugin analyzes sharp edges and suggests hooks — deterministic scripts that run automatically, unlike rules which are advisory. Hooks are **suggested only**, never auto-written.
+
+| Sharp Edge | Suggested Hook |
+|-----------|---------------|
+| `shell=True`, `eval()`, `exec()` | Warn on file edit |
+| Hardcoded credentials | Block on commit |
+| f-string SQL injection | Warn on file edit |
+| `dangerouslySetInnerHTML` | Warn on file edit |
+| Linter detected | Run lint on every file edit |
+| Migrations/secrets directory | Block writes without approval |
+
+## Audit Mode
+
+Run `--audit` to health-check existing rules:
+
+```
+/platxa-project-structure:setup --audit
+```
+
+Checks for:
+- Modules with no rule coverage
+- Rules referencing deleted files or empty globs
+- Bloated rule files (>50 lines) or CLAUDE.md (>200 lines)
+- Skills referencing missing commands
+
 ## Philosophy
 
 > Prompting is temporary. Structure is permanent.
 
 This plugin implements the [Claude Code Project Structure](https://code.claude.com/docs/en/memory) best practices:
 
-- **CLAUDE.md** = Repo memory (under 200 lines)
+- **CLAUDE.md** = Repo memory (under 200 lines, with `@import` references)
 - **.claude/rules/** = Path-scoped module guardrails
-- **.claude/skills/** = Reusable project workflows
+- **.claude/skills/** = Reusable project workflows (with progressive disclosure)
+- **.claude/agents/** = Domain-specific subagents
+- **Hooks** = Deterministic enforcement for critical patterns
 - **Non-destructive** = Safe to re-run anytime
 
 ## License

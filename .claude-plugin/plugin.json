@@ -1,7 +1,7 @@
 {
   "name": "platxa-project-structure",
-  "version": "1.0.0",
-  "description": "Auto-generates Claude Code project structure (.claude/rules, skills, CLAUDE.md) for any codebase. Analyzes your project, detects tech stack, identifies sharp edges, and creates path-scoped rules + project-specific skills.",
+  "version": "1.1.0",
+  "description": "Auto-generates Claude Code project structure (.claude/rules, skills, agents, CLAUDE.md, hook suggestions) for any codebase. Analyzes your project, detects tech stack and monorepo patterns, identifies sharp edges, and creates path-scoped rules, project-specific skills, domain-matched subagents, and hook recommendations.",
   "author": {
     "name": "DJ Patel"
   },
@@ -14,7 +14,10 @@
     "scaffolding",
     "rules",
     "skills",
+    "agents",
+    "hooks",
     "CLAUDE.md",
+    "monorepo",
     "developer-experience"
   ]
 }
