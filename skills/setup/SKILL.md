@@ -92,6 +92,14 @@ When generating in **always-on mode**, strip the `paths:` YAML frontmatter from 
 
 5. Also generate a language-wide rule file (e.g., `.claude/rules/python.md` for all *.py files)
 
+6. **Framework-specific rules**: If a framework is detected, append the matching framework template content to the language-wide rule file:
+   - Next.js (App Router) → `templates/rules/framework-nextjs-approuter.md`
+   - FastAPI → `templates/rules/framework-fastapi.md`
+   - Django → `templates/rules/framework-django.md`
+   - Express/Node.js → `templates/rules/framework-express.md`
+   
+   Append (don't replace) to the language rule file. If no framework detected, skip.
+
 ### Step 4: Generate .claude/skills/ Files
 
 For each applicable skill template:

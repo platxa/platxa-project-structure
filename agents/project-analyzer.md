@@ -32,6 +32,10 @@ Check for these files to determine language, framework, and tooling:
 
 For each detected language, identify:
 - **Framework**: FastAPI, Django, Flask, Express, Next.js, Gin, Actix, Rails, Spring, etc.
+- **Framework variant**: Detect sub-types for more specific rules:
+  - Next.js: check for `app/` directory → App Router; `pages/` directory → Pages Router
+  - Django: check for `django-rest-framework` in dependencies → DRF
+  - Express: check for `@nestjs/core` → NestJS instead of plain Express
 - **Package manager**: pip/uv/poetry, npm/pnpm/yarn/bun, go modules, cargo
 - **Test framework**: pytest, jest, vitest, go test, cargo test, rspec, junit
 - **Linter**: ruff, eslint, oxlint, golangci-lint, clippy, rubocop
@@ -200,6 +204,7 @@ Return a JSON report:
   "stack": {
     "language": "python",
     "framework": "fastapi",
+    "frameworkVariant": null,
     "packageManager": "pip",
     "testFramework": "pytest",
     "linter": "ruff",
