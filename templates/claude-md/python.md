@@ -1,7 +1,6 @@
 # CLAUDE.md
 
-## Project Overview
-{{PROJECT_NAME}} — {{PROJECT_DESCRIPTION}}
+See @README.md for project overview. See @pyproject.toml for dependencies and tooling.
 
 ## Development
 

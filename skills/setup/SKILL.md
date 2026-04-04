@@ -144,6 +144,7 @@ Skip existing files — never overwrite.
 - Select template matching the project's language
 - Substitute tokens from analysis
 - For `{{ARCHITECTURE_SUMMARY}}`, generate a brief description of the project's module structure
+- **@import handling**: The templates include `@README.md`, `@package.json`, `@pyproject.toml`, or `@go.mod` imports. Before writing, verify the referenced file exists. If it does NOT exist, remove that `@import` line from the output. Never generate imports pointing to non-existent files.
 - Write to `CLAUDE.md`
 
 ### Step 6: Generate Hook Suggestions
