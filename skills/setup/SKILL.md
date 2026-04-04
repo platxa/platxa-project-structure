@@ -132,7 +132,29 @@ This keeps token usage low — Claude only loads references/ when the user asks 
 
 Skip existing files — never overwrite.
 
-### Step 5: Audit or Generate CLAUDE.md
+### Step 5: Generate .claude/agents/ Files
+
+Generate domain-specific subagent definitions based on detected modules. Match module names/paths against known domain patterns:
+
+| Module Pattern | Agent Template | Generated File |
+|---------------|----------------|----------------|
+| `auth`, `security`, `login`, `oauth` | `templates/agents/security-reviewer.md` | `.claude/agents/security-reviewer.md` |
+| `api`, `routes`, `endpoints`, `controllers` | `templates/agents/api-tester.md` | `.claude/agents/api-tester.md` |
+| `db`, `database`, `models`, `migrations`, `orm` | `templates/agents/db-reviewer.md` | `.claude/agents/db-reviewer.md` |
+
+Also trigger agent generation from detected databases:
+- If `databases[]` is non-empty → generate `db-reviewer` agent
+
+For each matched agent:
+1. Select the template from `templates/agents/`
+2. Substitute `{{MODULE_NAME}}` and `{{MODULE_PATH}}` with the matching module
+3. Write to `.claude/agents/{agent-name}.md`
+4. **NEVER overwrite** existing files — skip with a message
+
+If no modules match any domain pattern, skip this step entirely.
+
+### Step 6: Audit or Generate CLAUDE.md
+
 
 **If CLAUDE.md exists:**
 - Count lines
@@ -147,7 +169,7 @@ Skip existing files — never overwrite.
 - **@import handling**: The templates include `@README.md`, `@package.json`, `@pyproject.toml`, or `@go.mod` imports. Before writing, verify the referenced file exists. If it does NOT exist, remove that `@import` line from the output. Never generate imports pointing to non-existent files.
 - Write to `CLAUDE.md`
 
-### Step 6: Generate Hook Suggestions
+### Step 7: Generate Hook Suggestions
 
 Analyze the sharp edges from the analysis report and generate concrete hook suggestions. Reference `templates/hooks/sharp-edge-hooks.md` for the pattern-to-hook mapping.
 
@@ -187,7 +209,7 @@ Analyze the sharp edges from the analysis report and generate concrete hook sugg
 
 **Do NOT write to `.claude/settings.json`** — only suggest in the report. The user must review and apply hooks manually.
 
-### Step 7: Calculate After Score & Report
+### Step 8: Calculate After Score & Report
 
 Calculate the new score using the same rubric.
 

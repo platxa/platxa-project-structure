@@ -35,6 +35,7 @@ All templates use `{{DOUBLE_BRACE}}` tokens. Common tokens: `{{MODULE_NAME}}`, `
 | `templates/rules/{lang}.md` | Rule templates per language (python, typescript, go, rust, generic) |
 | `templates/skills/*.md` | Skill templates (run-tests, lint) |
 | `templates/hooks/sharp-edge-hooks.md` | Sharp edge pattern → hook config mapping |
+| `templates/agents/*.md` | Subagent templates (security-reviewer, api-tester, db-reviewer) |
 | `templates/claude-md/{lang}.md` | CLAUDE.md starter templates per language |
 
 ## Supported Languages
