@@ -6,6 +6,44 @@ description: Analyze any codebase and auto-generate Claude Code project structur
 
 Analyze the current project and generate a complete Claude Code project structure.
 
+## Flags
+
+| Flag | Effect |
+|------|--------|
+| `--audit` | Analyze existing rules for staleness (see [Audit Mode](#audit-mode)) |
+| `--dry-run` | Show what would be created without writing any files |
+
+## Dry-Run Mode
+
+When invoked with `--dry-run`, execute the full analysis pipeline (Steps 1-2) but **skip all file writes** in Steps 3-7. Instead, collect the list of files that *would* be created and print a preview report:
+
+```
++======================================================================+
+|  DRY RUN — No files will be created                                  |
++======================================================================+
+
+Project: my-api
+Stack:   Python + FastAPI | pytest | ruff
+
+Would create:
+  → .claude/rules/api.md              (paths: src/api/**)
+  → .claude/rules/auth.md             (paths: src/auth/**)
+  → .claude/rules/python.md           (paths: **/*.py)
+  → .claude/skills/run-tests/SKILL.md (pytest -v)
+  → .claude/skills/lint/SKILL.md      (ruff check --fix)
+  → .claude/agents/security-reviewer.md
+  → CLAUDE.md                         (45 lines)
+
+Would skip (already exist):
+  ⊘ .claude/rules/config.md
+
+Score: 15% → 87% (+72%) if applied
+
+Run without --dry-run to create these files.
+```
+
+All analysis, scoring, and hook suggestions are computed and shown. Only file creation is suppressed.
+
 ## Execution Protocol
 
 ### Step 1: Analyze the Project
