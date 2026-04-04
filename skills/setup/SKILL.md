@@ -176,6 +176,11 @@ This keeps token usage low — Claude only loads references/ when the user asks 
    - Substitute `{{LINT_COMMAND}}` and `{{LINT_FIX_COMMAND}}`
    - Write to `.claude/skills/lint/SKILL.md`
 
+3. **format-check** (if formatter detected):
+   - Substitute `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, and `{{FORMAT_FIX_COMMAND}}`
+   - Common values: `ruff format --check .` / `ruff format .`, `prettier --check .` / `prettier --write .`, `gofmt -l .` / `gofmt -w .`, `cargo fmt --check` / `cargo fmt`
+   - Write to `.claude/skills/format-check/SKILL.md`
+
 Skip existing files — never overwrite.
 
 ### Step 5: Generate .claude/agents/ Files
