@@ -96,6 +96,32 @@ When generating in **always-on mode**, strip the `paths:` YAML frontmatter from 
 
 For each applicable skill template:
 
+**Progressive disclosure**: If a generated skill would exceed 30 lines, split it:
+- **SKILL.md** (core): Keep the description, main command, and essential instructions (under 30 lines)
+- **references/**: Move detailed documentation, examples, and edge cases into separate files
+- Link from SKILL.md using `@references/FILENAME.md` imports
+
+Example split structure:
+```
+.claude/skills/run-tests/
+├── SKILL.md              ← Core instructions (under 30 lines)
+└── references/
+    └── test-patterns.md  ← Detailed test patterns, fixtures, edge cases
+```
+
+Example SKILL.md with import:
+```markdown
+---
+description: Run the project test suite
+---
+# Run Tests
+Run tests: `pytest tests/ -v`
+
+For advanced patterns and fixtures: @references/test-patterns.md
+```
+
+This keeps token usage low — Claude only loads references/ when the user asks about advanced patterns.
+
 1. **run-tests** (always, if test framework detected):
    - Substitute `{{TEST_FRAMEWORK}}` and `{{TEST_COMMAND}}`
    - Write to `.claude/skills/run-tests/SKILL.md`
