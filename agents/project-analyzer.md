@@ -64,9 +64,47 @@ grep -rh "import psycopg\|import redis\|import pymongo\|from neo4j\|from qdrant\
 grep -rh "require.*pg\|require.*redis\|require.*mongoose\|import.*prisma\|import.*typeorm\|import.*drizzle" --include="*.ts" --include="*.js" -l 2>/dev/null | head -5
 ```
 
-### Step 3: Enumerate Modules
+### Step 3: Detect Monorepo
+
+Check if the project is a monorepo with multiple packages/workspaces:
+```bash
+# pnpm workspaces
+cat pnpm-workspace.yaml 2>/dev/null
+
+# npm/yarn workspaces (in package.json)
+cat package.json 2>/dev/null | grep -A 10 '"workspaces"'
+
+# Lerna
+cat lerna.json 2>/dev/null
+
+# Go workspace
+cat go.work 2>/dev/null
+
+# Multiple go.mod files (Go multi-module)
+find . -name "go.mod" -not -path "*/vendor/*" 2>/dev/null
+
+# Cargo workspace
+grep -A 5 '\[workspace\]' Cargo.toml 2>/dev/null
+
+# Nx
+cat nx.json 2>/dev/null
+```
+
+If a monorepo is detected:
+- Set `monorepo.detected` to `true`
+- Set `monorepo.tool` to the workspace tool (`pnpm`, `npm`, `yarn`, `lerna`, `go-work`, `cargo`, `nx`)
+- List each workspace package in `monorepo.packages[]` with `name` and `path`
+- Each package becomes a separate module in the modules list with its full relative path
+
+If NOT a monorepo, set `monorepo.detected` to `false` and proceed normally.
+
+### Step 4: Enumerate Modules
 
 Find the top-level code directories (the "modules"):
+
+**For monorepos**: Each workspace package is a module. Use the paths from Step 3.
+
+**For single-root projects**:
 ```bash
 # Find src/ or main code directory
 for dir in src lib app pkg cmd internal odoo_rag_core; do
@@ -167,6 +205,15 @@ Return a JSON report:
     "linter": "ruff",
     "typeChecker": "pyright",
     "formatter": "ruff format"
+  },
+  "monorepo": {
+    "detected": true,
+    "tool": "pnpm",
+    "packages": [
+      {"name": "frontend", "path": "packages/frontend"},
+      {"name": "api", "path": "packages/api"},
+      {"name": "shared", "path": "packages/shared"}
+    ]
   },
   "databases": ["postgresql", "redis", "neo4j"],
   "modules": [

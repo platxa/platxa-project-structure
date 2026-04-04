@@ -37,7 +37,9 @@ Score the project 0-100 based on existing structure:
 
 For each module detected by the analyzer:
 
-1. Select the template matching the project's primary language:
+**Monorepo handling**: If `monorepo.detected` is true, each workspace package is a module. Use the full relative path from the repo root (e.g., `packages/frontend`) as `{{MODULE_PATH}}`. For monorepos with mixed languages (e.g., TypeScript frontend + Python API), select the template matching **each package's language**, not the project-wide primary language.
+
+1. Select the template matching the module's language:
    - Python → `templates/rules/python.md`
    - TypeScript/JavaScript → `templates/rules/typescript.md`
    - Go → `templates/rules/go.md`
@@ -46,7 +48,7 @@ For each module detected by the analyzer:
 
 2. Substitute all template tokens:
    - `{{MODULE_NAME}}` → module name (capitalized)
-   - `{{MODULE_PATH}}` → relative path to module
+   - `{{MODULE_PATH}}` → relative path to module (for monorepos: full path from repo root, e.g., `packages/api`)
    - `{{FILE_COUNT}}` → number of files
    - `{{LINE_COUNT}}` → lines of code
    - `{{COMPLEXITY}}` → S/M/L/XL
