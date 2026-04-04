@@ -130,6 +130,25 @@ find .claude/skills -name "SKILL.md" 2>/dev/null
 cat .claude/settings.json 2>/dev/null | grep -c "hooks"
 ```
 
+### Step 6: Detect Sensitive Paths
+
+Identify directories that should be protected with hooks:
+```bash
+# Migration directories
+find . -type d -name "migrations" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -5
+
+# Environment files
+ls -1 .env .env.* .env.example .env.development 2>/dev/null
+
+# Secret directories
+find . -type d -name "secrets" -o -name "credentials" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null | head -5
+```
+
+Populate the `sensitivePaths` field in the report:
+- `migrations`: true if any migration directories found
+- `envFiles`: true if any .env files found
+- `secrets`: true if secrets/credentials directories found
+
 ## Output Format
 
 Return a JSON report:
@@ -158,11 +177,17 @@ Return a JSON report:
     {"module": "connectors", "pattern": "shell=True", "file": "ssh_tunnel.py", "line": 42, "severity": "error"},
     {"module": "config", "pattern": "hardcoded password", "file": "settings.py", "line": 29, "severity": "warn"}
   ],
+  "sensitivePaths": {
+    "migrations": true,
+    "envFiles": true,
+    "secrets": false
+  },
   "existingStructure": {
     "claudeMd": {"exists": true, "lines": 160, "bloated": false},
     "rules": [],
     "skills": [],
-    "hooks": false
+    "hooks": false,
+    "hookCount": 0
   },
   "score": {
     "before": 35,

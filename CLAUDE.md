@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-A Claude Code **plugin** that auto-generates project structure (`.claude/rules/`, `.claude/skills/`, `CLAUDE.md`) for any codebase. The user runs `/platxa-project-structure:setup` on their project, and the plugin analyzes the codebase, detects the tech stack, identifies sharp edges, and scaffolds path-scoped rules + skills.
+A Claude Code **plugin** that auto-generates project structure (`.claude/rules/`, `.claude/skills/`, `CLAUDE.md`, hook suggestions) for any codebase. The user runs `/platxa-project-structure:setup` on their project, and the plugin analyzes the codebase, detects the tech stack, identifies sharp edges, scaffolds path-scoped rules + skills, and suggests hooks for deterministic enforcement of critical patterns.
 
 ## Plugin Architecture
 
@@ -34,8 +34,8 @@ All templates use `{{DOUBLE_BRACE}}` tokens. Common tokens: `{{MODULE_NAME}}`, `
 | `skills/setup/SKILL.md` | Main orchestrator skill (`/platxa-project-structure:setup`) |
 | `templates/rules/{lang}.md` | Rule templates per language (python, typescript, go, rust, generic) |
 | `templates/skills/*.md` | Skill templates (run-tests, lint) |
+| `templates/hooks/sharp-edge-hooks.md` | Sharp edge pattern → hook config mapping |
 | `templates/claude-md/{lang}.md` | CLAUDE.md starter templates per language |
-| `.claude/generated_features.json` | Feature spec tracking (21 features, used for development) |
 
 ## Supported Languages
 

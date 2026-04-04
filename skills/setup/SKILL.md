@@ -99,7 +99,47 @@ Skip existing files — never overwrite.
 - For `{{ARCHITECTURE_SUMMARY}}`, generate a brief description of the project's module structure
 - Write to `CLAUDE.md`
 
-### Step 6: Calculate After Score & Report
+### Step 6: Generate Hook Suggestions
+
+Analyze the sharp edges from the analysis report and generate concrete hook suggestions. Reference `templates/hooks/sharp-edge-hooks.md` for the pattern-to-hook mapping.
+
+**For each sharp edge**, match the pattern to a hook type:
+
+| Sharp Edge Pattern | Hook Type | Event |
+|--------------------|-----------|-------|
+| `shell=True`, `exec(`, `eval(` | Warn on edit | `on_file_edit` |
+| Hardcoded credentials | Block on commit | `pre_commit` |
+| f-string SQL (`f"...SELECT`) | Warn on edit | `on_file_edit` |
+| `dangerouslySetInnerHTML` | Warn on edit | `on_file_edit` |
+
+**Always suggest these baseline hooks** (regardless of sharp edges):
+
+1. **Lint on edit** — if linter detected, suggest running `{{LINT_COMMAND}}` on file edit for source files
+2. **Block sensitive dirs** — if migrations/, secrets/, or .env files exist, suggest blocking writes
+
+**Output format**: Generate a JSON array of hook configs that the user can copy into `.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "on_file_edit": [
+      {
+        "pattern": "**/*.py",
+        "command": "{{LINT_COMMAND}}"
+      }
+    ],
+    "pre_commit": [
+      {
+        "command": "grep -rn 'password.*=[\"'\\''']' --include='*.py' . && echo 'BLOCKED: Hardcoded credentials' >&2 && exit 1 || true"
+      }
+    ]
+  }
+}
+```
+
+**Do NOT write to `.claude/settings.json`** — only suggest in the report. The user must review and apply hooks manually.
+
+### Step 7: Calculate After Score & Report
 
 Calculate the new score using the same rubric.
 
@@ -130,10 +170,22 @@ Sharp edges documented:
   ⚠ connectors/ssh_tunnel.py:42 — shell=True
   ⚠ config/settings.py:29 — hardcoded password
 
+Suggested hooks (add to .claude/settings.json):
+  🔧 on_file_edit: Run ruff check on **/*.py edits
+  🔧 on_file_edit: Warn on shell=True in connectors/**
+  🔧 pre_commit: Block hardcoded credentials
+  🔧 on_file_edit: Block writes to **/migrations/**
+
+  Copy-paste config:
+  {
+    "hooks": { ... }
+  }
+
 Next steps:
   1. Review generated files and customize as needed
-  2. Commit .claude/ directory to version control
-  3. Run /platxa-project-structure:setup again after major refactors
+  2. Review suggested hooks and add to .claude/settings.json
+  3. Commit .claude/ directory to version control
+  4. Run /platxa-project-structure:setup again after major refactors
 ```
 
 ## Important Rules
