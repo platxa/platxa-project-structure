@@ -1,0 +1,20 @@
+{
+  "name": "platxa-project-structure",
+  "version": "1.0.0",
+  "description": "Auto-generates Claude Code project structure (.claude/rules, skills, CLAUDE.md) for any codebase. Analyzes your project, detects tech stack, identifies sharp edges, and creates path-scoped rules + project-specific skills.",
+  "author": {
+    "name": "DJ Patel"
+  },
+  "homepage": "https://github.com/platxa/platxa-project-structure",
+  "repository": "https://github.com/platxa/platxa-project-structure",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "project-structure",
+    "scaffolding",
+    "rules",
+    "skills",
+    "CLAUDE.md",
+    "developer-experience"
+  ]
+}
