@@ -172,6 +172,28 @@ find .claude/skills -name "SKILL.md" 2>/dev/null
 cat .claude/settings.json 2>/dev/null | grep -c "hooks"
 ```
 
+### Step 5.5: Detect Infrastructure-as-Code
+
+Check for infrastructure manifests that warrant a dedicated rule file:
+
+```bash
+# Docker / compose
+ls -1 Dockerfile Dockerfile.* docker-compose.yml docker-compose.*.yml 2>/dev/null
+
+# Kubernetes / Helm / manifests
+find k8s kubernetes manifests helm charts -maxdepth 3 -name "*.yml" -o -name "*.yaml" 2>/dev/null | head -5
+
+# Terraform
+find . -maxdepth 3 -name "*.tf" -not -path "*/.terraform/*" 2>/dev/null | head -5
+```
+
+Populate `infrastructure` field in the report:
+- `docker`: true if any Dockerfile or docker-compose file found
+- `kubernetes`: true if any file under k8s/, kubernetes/, manifests/, helm/, or charts/ matches *.yml/*.yaml
+- `terraform`: true if any .tf files found outside .terraform/
+
+If any of these flags is true, the setup skill will generate `.claude/rules/infra.md` from the infra template.
+
 ### Step 6: Detect Sensitive Paths
 
 Identify directories that should be protected with hooks:
@@ -233,6 +255,11 @@ Return a JSON report:
     "migrations": true,
     "envFiles": true,
     "secrets": false
+  },
+  "infrastructure": {
+    "docker": true,
+    "kubernetes": false,
+    "terraform": false
   },
   "existingStructure": {
     "claudeMd": {"exists": true, "lines": 160, "bloated": false},

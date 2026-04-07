@@ -125,6 +125,7 @@ For each module:
 4. Write to `.claude/rules/{module_name}.md` — **NEVER overwrite** existing files (skip with a message)
 5. Also generate a language-wide rule file (e.g., `.claude/rules/python.md` for all `*.py`)
 6. **Framework append**: if a framework is detected, append the matching framework template content to the language-wide rule file (do not replace)
+7. **Infrastructure rule**: if `infrastructure.docker`, `infrastructure.kubernetes`, or `infrastructure.terraform` is true in the analyzer report, also generate `.claude/rules/infra.md` from `templates/rules/infra.md`. The template has no tokens to substitute — write it verbatim. This rule is path-scoped to `**/Dockerfile`, `k8s/**/*.yml`, `**/*.tf`, etc., and only activates when Claude reads infra files. Skip if the target file already exists.
 
 ### Step 4: Generate .claude/skills/ Files
 
