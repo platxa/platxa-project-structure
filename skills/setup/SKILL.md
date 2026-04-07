@@ -196,6 +196,7 @@ Generate these skills when the corresponding tool is detected:
 | `lint` | Linter detected | `{{LINT_COMMAND}}`, `{{LINT_FIX_COMMAND}}`, `{{SOURCE_GLOB}}` |
 | `format-check` | Formatter detected | `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, `{{FORMAT_FIX_COMMAND}}`, `{{SOURCE_GLOB}}` |
 | `typecheck` | Type checker detected | `{{TYPE_CHECKER}}`, `{{TYPE_CHECK_COMMAND}}`, `{{SOURCE_GLOB}}` |
+| `audit` | Always | (none — verbatim copy of `templates/skills/audit.md`) |
 
 **Path-scoped activation**: Skill templates include a `paths:` frontmatter field with `{{SOURCE_GLOB}}` (and `{{TEST_GLOB}}` for run-tests). The setup skill substitutes these from the detected language so each generated skill only auto-activates when Claude is working with relevant files. Common values:
 
