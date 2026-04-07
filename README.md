@@ -12,16 +12,17 @@ Run one command on any project:
 
 The plugin:
 
-1. **Detects** your tech stack (language, framework, test runner, linter, databases)
-2. **Detects** monorepo patterns (pnpm, npm, yarn workspaces, Go workspaces, Cargo, Lerna, Nx)
-3. **Analyzes** every module (file count, LOC, complexity score)
-4. **Finds** sharp edges (dangerous patterns, security risks, high TODO density)
-5. **Generates** `.claude/rules/` with path-scoped rules per module
-6. **Generates** `.claude/skills/` for run-tests, lint, format-check, and typecheck
-7. **Generates** `.claude/agents/` with domain-specific subagents (security, API, database)
-8. **Audits** existing CLAUDE.md (flags bloat >200 lines) or generates one with `@import` references
-9. **Suggests** hooks for deterministic enforcement of critical patterns
-10. **Reports** a before/after structure score (0-100%)
+1. **Preflights** — warns about ancestor and managed-policy `CLAUDE.md` files that will load alongside what it generates
+2. **Detects** your tech stack (language, framework, test runner, linter, databases, infrastructure-as-code, CI/CD)
+3. **Detects** monorepo patterns (pnpm, npm, yarn workspaces, Go workspaces, Cargo, Lerna, Nx)
+4. **Analyzes** every module (file count, LOC, complexity score)
+5. **Finds** sharp edges (dangerous patterns, security risks, high TODO density)
+6. **Generates** `.claude/rules/` with path-scoped rules per module, plus `infra.md` and `ci.md` when applicable
+7. **Generates** `.claude/skills/` for run-tests, lint, format-check, typecheck, and audit — with `allowed-tools`, `paths:` scoping, and `disable-model-invocation` on mutating skills
+8. **Generates** `.claude/agents/` with domain-matched subagents (security, API, database) and a complexity-triggered `refactor-reviewer` for L/XL modules
+9. **Audits** existing CLAUDE.md (flags bloat >200 lines) or generates one with bare `@import` references
+10. **Suggests** hooks using canonical Claude Code events (`PreToolUse`, `PostToolUse`, `InstructionsLoaded`) — never invented event names
+11. **Reports** a before/after structure score (0-100%)
 
 ## Install
 
@@ -43,7 +44,10 @@ Navigate to any project and run:
 |------|-------------|
 | *(none)* | Full setup — analyze and generate everything |
 | `--dry-run` | Preview what would be created without writing any files |
-| `--audit` | Health check existing `.claude/` structure for stale rules and gaps |
+| `--audit` | Health-check existing `.claude/` structure for stale rules, dead globs, and gaps |
+| `--update` | Fill only missing slots; never touch present files (safer than re-run) |
+| `--with-local` | Also generate a gitignored `CLAUDE.local.md` for personal preferences |
+| `--seed-memory` | Print a starter `MEMORY.md` template for machine-local auto memory |
 
 ### Example Output
 
@@ -79,10 +83,11 @@ Sharp edges documented:
   ⚠ config/settings.py:29 — hardcoded password
 
 Suggested hooks (add to .claude/settings.json):
-  🔧 on_file_edit: Run ruff check on **/*.py edits
-  🔧 on_file_edit: Warn on shell=True in connectors/**
-  🔧 pre_commit: Block hardcoded credentials
-  🔧 on_file_edit: Block writes to **/migrations/**
+  🔧 PostToolUse:          Run ruff check on **/*.py edits
+  🔧 PostToolUse:          Warn on shell=True in connectors/**
+  🔧 PreToolUse:           Block hardcoded credentials on git commit
+  🔧 PreToolUse:           Block writes to **/migrations/**
+  🔧 InstructionsLoaded:   Log loaded rule files for debugging
 
 Next steps:
   1. Review generated files and customize as needed
@@ -125,26 +130,34 @@ The plugin **never overwrites** existing files. If `.claude/rules/api.md` alread
 ```
 your-project/
 ├── CLAUDE.md                         ← Generated if missing (audited if exists)
+├── CLAUDE.local.md                   ← Optional (--with-local), gitignored
 └── .claude/
     ├── rules/
     │   ├── api.md                    ← paths: src/api/**/*.py
     │   ├── auth.md                   ← paths: src/auth/**/*.py
     │   ├── database.md               ← paths: src/database/**/*.py
-    │   └── python.md                 ← paths: **/*.py (language-wide + framework rules)
+    │   ├── python.md                 ← paths: **/*.py (language-wide + framework rules)
+    │   ├── infra.md                  ← paths: Dockerfile, k8s/**, *.tf (if detected)
+    │   └── ci.md                     ← paths: .github/workflows/**, etc (if detected)
     ├── skills/
     │   ├── run-tests/
-    │   │   └── SKILL.md              ← pytest -v
+    │   │   └── SKILL.md              ← pytest -v        (auto-invocable)
     │   ├── lint/
-    │   │   └── SKILL.md              ← ruff check --fix .
+    │   │   └── SKILL.md              ← ruff check --fix (user-only — side effects)
     │   ├── format-check/
-    │   │   └── SKILL.md              ← ruff format
-    │   └── typecheck/
-    │       └── SKILL.md              ← pyright .
+    │   │   └── SKILL.md              ← ruff format      (user-only — side effects)
+    │   ├── typecheck/
+    │   │   └── SKILL.md              ← pyright .        (auto-invocable)
+    │   └── audit/
+    │       └── SKILL.md              ← /audit shortcut for --audit mode
     └── agents/
         ├── security-reviewer.md      ← Generated if auth module detected
         ├── api-tester.md             ← Generated if API module detected
-        └── db-reviewer.md            ← Generated if database module detected
+        ├── db-reviewer.md            ← Generated if database module detected
+        └── refactor-reviewer.md      ← Generated if any module is L/XL complexity
 ```
+
+Every generated skill has canonical Claude Code frontmatter: `name`, `description`, `allowed-tools`, `paths:` for language-scoped activation, and `disable-model-invocation: true` on the two mutating skills (`lint`, `format-check`) so Claude can't auto-trigger file rewrites.
 
 ## How Rules Work
 
@@ -170,16 +183,19 @@ For small projects (fewer than 3 modules), rules are generated without `paths:` 
 
 ## How Hooks Work
 
-The plugin analyzes sharp edges and suggests hooks — deterministic scripts that run automatically, unlike rules which are advisory. Hooks are **suggested only**, never auto-written.
+The plugin analyzes sharp edges and suggests hooks using **canonical Claude Code hook events** — `PreToolUse`, `PostToolUse`, `InstructionsLoaded` — per <https://code.claude.com/docs/en/hooks>. Hook configs are emitted in the correct `hooks.{Event}[].matcher + hooks[]` shape with `if:` permission rule syntax. Hooks are **suggested only**, never auto-written.
 
-| Sharp Edge | Suggested Hook |
-|-----------|---------------|
-| `shell=True`, `eval()`, `exec()` | Warn on file edit |
-| Hardcoded credentials | Block on commit |
-| f-string SQL injection | Warn on file edit |
-| `dangerouslySetInnerHTML` | Warn on file edit |
-| Linter detected | Run lint on every file edit |
-| Migrations/secrets directory | Block writes without approval |
+| Sharp Edge | Event | Semantics |
+|---|---|---|
+| `shell=True`, `eval()`, `exec()` | `PostToolUse` | Warn after edit (non-blocking) |
+| Hardcoded credentials | `PreToolUse` on `Bash(git commit*)` | **Block** via exit code 2 |
+| f-string SQL injection | `PostToolUse` | Warn after edit |
+| `dangerouslySetInnerHTML` | `PostToolUse` | Warn after edit |
+| Linter detected | `PostToolUse` | Run lint; pipes output back via `additionalContext` |
+| Migrations/secrets directories | `PreToolUse` on `Edit\|Write` | **Block** via exit code 2 |
+| *(debug)* Rule load tracing | `InstructionsLoaded` | Log which CLAUDE.md/rules loaded and why |
+
+The baseline `InstructionsLoaded` diagnostic hook is always suggested — it's the canonical debug path for path-scoped rule troubleshooting per the Claude Code memory docs.
 
 ## Audit Mode
 
@@ -190,10 +206,40 @@ Run `--audit` to health-check existing rules:
 ```
 
 Checks for:
+
 - Modules with no rule coverage
-- Rules referencing deleted files or empty globs
+- Rules referencing deleted files or **dead globs** (zero-match — verified via the `Glob` tool)
 - Bloated rule files (>50 lines) or CLAUDE.md (>200 lines)
 - Skills referencing missing commands
+
+Audit never modifies files — it only reports. You decide what to fix.
+
+## Update Mode
+
+Run `--update` for a non-destructive refresh after adding a new module or upgrading the plugin:
+
+```
+/platxa-project-structure:setup --update
+```
+
+Fills only the missing slots. Every existing file is left untouched. Safer than delete-and-rerun, sharper than the default (which also skips existing files but runs the full generation plan).
+
+## Testing
+
+A Bash-based token validator guards against template drift:
+
+```bash
+bash tests/validate-tokens.sh
+```
+
+It enumerates every `{{TOKEN}}` used in `templates/`, `skills/`, and `agents/`, then asserts:
+
+1. Every used token is in the `ALLOWED_TOKENS` registry
+2. Every allowed token is actually used (no orphans)
+3. Every used token is documented in `skills/setup/references/templates.md`
+4. Direct-mapped tokens have their source field in `agents/project-analyzer.md`'s output schema
+
+Run it after any template edit. Exits non-zero on any mismatch.
 
 ## Mapping to Claude Code Primitives
 
