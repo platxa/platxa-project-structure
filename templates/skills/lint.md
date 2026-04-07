@@ -1,6 +1,7 @@
 ---
-description: Run linter and fix issues automatically
+description: Run linter and fix issues automatically. User-invoked only — has side effects (auto-fixes files).
 allowed-tools: Bash Read Edit
+disable-model-invocation: true
 paths:
   - "{{SOURCE_GLOB}}"
 ---
