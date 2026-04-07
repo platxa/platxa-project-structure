@@ -97,6 +97,14 @@ Step 5 generates domain-matched subagents based on module names/paths:
 | `api`, `routes`, `endpoints`, `controllers` | `templates/agents/api-tester.md` | `.claude/agents/api-tester.md` |
 | `db`, `database`, `models`, `migrations`, `orm` | `templates/agents/db-reviewer.md` | `.claude/agents/db-reviewer.md` |
 
+**Complexity-based triggers** (independent of name match):
+
+| Trigger | Agent template | Output file |
+|---|---|---|
+| Any module with `complexity` of `L` or `XL` | `templates/agents/refactor-reviewer.md` | `.claude/agents/refactor-reviewer.md` |
+
 Also: if `databases[]` is non-empty in the analyzer report, generate the `db-reviewer` agent regardless of module name match.
 
-If no modules match any domain pattern, skip Step 5 entirely.
+The refactor-reviewer agent is generated **once per project** even if multiple modules qualify — it uses the **largest** L/XL module as its `{{MODULE_NAME}}`/`{{MODULE_PATH}}`/`{{COMPLEXITY}}`/`{{FILE_COUNT}}`/`{{LINE_COUNT}}` context.
+
+If no modules match any domain pattern AND no module is L/XL AND `databases[]` is empty, skip Step 5 entirely.
