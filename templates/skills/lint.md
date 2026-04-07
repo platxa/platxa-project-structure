@@ -1,5 +1,6 @@
 ---
 description: Run linter and fix issues automatically
+allowed-tools: Bash Read Edit
 ---
 
 # Lint

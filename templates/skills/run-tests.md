@@ -1,5 +1,6 @@
 ---
 description: Run the project test suite and report results
+allowed-tools: Bash Read
 ---
 
 # Run Tests

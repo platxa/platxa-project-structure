@@ -1,5 +1,6 @@
 ---
 description: Check and fix code formatting using {{FORMATTER}}
+allowed-tools: Bash Read Edit
 ---
 
 # Format Check
