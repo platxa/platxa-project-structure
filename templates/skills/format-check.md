@@ -1,4 +1,5 @@
 ---
+name: format-check
 description: Check and fix code formatting using {{FORMATTER}}. User-invoked only — has side effects (rewrites files).
 allowed-tools: Bash Read Edit
 disable-model-invocation: true

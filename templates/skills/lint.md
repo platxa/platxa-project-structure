@@ -1,4 +1,5 @@
 ---
+name: lint
 description: Run linter and fix issues automatically. User-invoked only — has side effects (auto-fixes files).
 allowed-tools: Bash Read Edit
 disable-model-invocation: true

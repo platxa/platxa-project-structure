@@ -1,4 +1,5 @@
 ---
+name: run-tests
 description: Run the project test suite and report results
 allowed-tools: Bash Read
 paths:
