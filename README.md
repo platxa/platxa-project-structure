@@ -195,6 +195,27 @@ Checks for:
 - Bloated rule files (>50 lines) or CLAUDE.md (>200 lines)
 - Skills referencing missing commands
 
+## Mapping to Claude Code Primitives
+
+This plugin exclusively emits official [Claude Code](https://code.claude.com/docs/en/memory) primitives — nothing invented, nothing proprietary. Use this table to understand what each generated file is and how Claude consumes it:
+
+| Plugin output | Claude Code primitive | Docs | Loading behavior |
+|---|---|---|---|
+| `CLAUDE.md` (generated if missing) | [Project memory](https://code.claude.com/docs/en/memory#claude-md-files) | `/en/memory` | Loaded in full, every session, walking up the directory tree |
+| `.claude/rules/{module}.md` with `paths:` frontmatter | [Path-scoped rules](https://code.claude.com/docs/en/memory#path-specific-rules) | `/en/memory` | Just-in-time: triggers when Claude reads a matching file |
+| `.claude/rules/{module}.md` without `paths:` (small projects) | [Unconditional rules](https://code.claude.com/docs/en/memory#organize-rules-with-claude-rules) | `/en/memory` | Loaded every session, same priority as `.claude/CLAUDE.md` |
+| `.claude/skills/{name}/SKILL.md` with `description` + `paths` + `allowed-tools` | [Agent Skills](https://code.claude.com/docs/en/skills) | `/en/skills` | Description in context; body loads on invoke or when relevant |
+| `.claude/skills/{name}/` with `disable-model-invocation: true` | User-only skill | `/en/skills#control-who-invokes-a-skill` | Hidden from Claude; must be invoked via `/skill-name` |
+| `.claude/agents/{domain}.md` | [Subagent](https://code.claude.com/docs/en/sub-agents) | `/en/sub-agents` | Isolated context window when delegated |
+| Suggested `hooks.{PreToolUse,PostToolUse,InstructionsLoaded}` in settings.json | [Hooks](https://code.claude.com/docs/en/hooks) | `/en/hooks` | Fire on lifecycle events; `PreToolUse` exit 2 blocks tools |
+| `@import` references inside generated CLAUDE.md | [Memory imports](https://code.claude.com/docs/en/memory#import-additional-files) | `/en/memory` | Expanded at launch, max 5-hop recursion |
+
+What the plugin does **not** touch:
+
+- **Auto memory** (`~/.claude/projects/<repo>/memory/MEMORY.md`) — machine-local, written by Claude itself across sessions. Coexists with the rules this plugin generates. See [`/en/memory#auto-memory`](https://code.claude.com/docs/en/memory#auto-memory).
+- **User-level config** (`~/.claude/`) — personal preferences are yours to maintain.
+- **Managed policy** (`/etc/claude-code/CLAUDE.md`) — organization-level settings deployed by IT.
+
 ## Philosophy
 
 > Prompting is temporary. Structure is permanent.
@@ -205,7 +226,7 @@ This plugin implements the [Claude Code Project Structure](https://code.claude.c
 - **.claude/rules/** = Path-scoped module guardrails
 - **.claude/skills/** = Reusable project workflows (with progressive disclosure)
 - **.claude/agents/** = Domain-specific subagents
-- **Hooks** = Deterministic enforcement for critical patterns
+- **Hooks** = Deterministic enforcement for critical patterns (canonical `PreToolUse`/`PostToolUse`/`InstructionsLoaded` events)
 - **Non-destructive** = Safe to re-run anytime
 
 ## License
