@@ -13,6 +13,7 @@ Analyze the current project and generate a complete Claude Code project structur
 | `--audit` | Analyze existing rules for staleness — see @references/audit.md |
 | `--dry-run` | Show what would be created without writing any files — see @references/dry-run.md |
 | `--update` | Re-run detection and fill ONLY missing slots; never modify present files — see [Update Mode](#update-mode) |
+| `--with-local` | Also generate a personal `CLAUDE.local.md` (gitignored) — see [Local Memory](#local-memory) |
 
 ## Update Mode
 
@@ -280,6 +281,42 @@ Next steps:
   3. Commit .claude/ directory to version control
   4. Run /platxa-project-structure:setup again after major refactors
 ```
+
+## Local Memory
+
+Invoked via the opt-in `--with-local` flag. In addition to the team-shared `CLAUDE.md`, generate a personal `CLAUDE.local.md` at the repo root for preferences that should never be committed.
+
+**Canonical location**: `./CLAUDE.local.md` — per the Claude Code memory docs, this file is loaded at the same level as `CLAUDE.md` and appended after it, so local preferences win on conflict. See <https://code.claude.com/docs/en/memory#choose-where-to-put-claude-md-files>.
+
+### Behavior
+
+1. Generate a minimal starter `CLAUDE.local.md` at the repo root:
+
+   ```markdown
+   # CLAUDE.local.md — Personal preferences (not committed)
+
+   This file is gitignored. Add personal preferences that should not be shared with the team.
+
+   ## Personal preferences
+   - (add your own)
+
+   ## Local sandbox URLs
+   - (add your own)
+   ```
+
+2. **Ensure it is gitignored.** Check `.gitignore`:
+   - If `.gitignore` already contains a line matching `CLAUDE.local.md`, do nothing.
+   - Otherwise, append `CLAUDE.local.md` on its own line.
+   - Never overwrite an existing `.gitignore`; only append.
+
+3. **NEVER overwrite** an existing `CLAUDE.local.md` — skip with a message if it already exists.
+
+4. Report in the Step 8 output:
+
+   ```
+   ✓ CLAUDE.local.md  (new — personal preferences, gitignored)
+   ✓ .gitignore       (appended: CLAUDE.local.md)
+   ```
 
 ## Important Rules
 
