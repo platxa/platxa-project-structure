@@ -19,3 +19,9 @@ See @README for project overview. See @package.json for available scripts and de
 
 ## Architecture
 {{ARCHITECTURE_SUMMARY}}
+
+<!-- Auto memory runs alongside this file: Claude writes learnings to
+     ~/.claude/projects/<repo>/memory/ which is machine-local and never
+     committed. Team-shared guidance belongs here; personal learnings
+     stay in auto memory. See https://code.claude.com/docs/en/memory#auto-memory -->
+
