@@ -5,9 +5,14 @@ Invoked with `--audit` (e.g., `/platxa-project-structure:setup --audit`). Skips 
 ## Audit Steps
 
 1. **Run the project-analyzer agent** (same as Step 1 of the main pipeline) to get the current module list
-2. **Read all existing `.claude/rules/*.md` files**
-3. **Cross-reference** rules against actual modules and files using the checks below
-4. **Print audit report** — never modifies files
+2. **Read all existing `.claude/rules/*.md` files** and parse their YAML frontmatter to extract each rule's `paths:` glob list
+3. **Glob-verify each `paths:` entry**: for every glob found in a rule's frontmatter, invoke the Glob tool with that pattern. If the result is empty (zero matching files), flag the rule as an **orphaned rule** (ERROR severity). This catches rules whose target modules have been deleted or renamed.
+   ```
+   For rule .claude/rules/api.md with paths: ["src/api/**/*.ts"]:
+     Glob(pattern="src/api/**/*.ts") → if result is empty, report ERROR
+   ```
+4. **Cross-reference** rules against actual modules (from the analyzer's `modules[]` list) using the checks below
+5. **Print audit report** — never modifies files
 
 ## Health Checks
 
