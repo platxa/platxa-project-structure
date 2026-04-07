@@ -70,6 +70,47 @@ Run without --update to see the full generation plan.
 
 ## Execution Protocol
 
+### Step 0: Preflight — Ancestor & Managed CLAUDE.md Check
+
+Before analyzing the project, scan for **already-loaded** instruction files that could conflict with generation. Claude Code walks up the directory tree concatenating every `CLAUDE.md` and `CLAUDE.local.md`, and also loads managed-policy CLAUDE.md if one exists. The user may not be aware of these.
+
+Run these checks in order:
+
+1. **Managed policy CLAUDE.md**: check for a managed-policy file at the OS-specific location:
+   - Linux / WSL: `/etc/claude-code/CLAUDE.md`
+   - macOS: `/Library/Application Support/ClaudeCode/CLAUDE.md`
+   - Windows: `C:\Program Files\ClaudeCode\CLAUDE.md`
+
+   If found, **warn** the user that an organization-managed CLAUDE.md is active and cannot be excluded via `claudeMdExcludes`. Report its line count. Do not block generation.
+
+2. **Ancestor CLAUDE.md files**: from `cwd`, walk up the directory tree to the filesystem root and collect every `CLAUDE.md` found in ancestor directories (not in `cwd` itself). Also collect `CLAUDE.local.md` at each level.
+
+   If any ancestor files are found, warn the user with a list like:
+
+   ```
+   ⚠ Ancestor CLAUDE.md files detected (loaded before project CLAUDE.md):
+     • /home/michael/workspace/CLAUDE.md            (120 lines)
+     • /home/michael/workspace/platxa/CLAUDE.md     (85 lines)
+   These will load alongside any project CLAUDE.md this plugin generates.
+   ```
+
+3. **`claudeMdExcludes` suggestion** — if the project is a monorepo AND ancestor files exceed a sensible threshold (total ancestor lines > 200, or more than 2 ancestor files), suggest a `claudeMdExcludes` stanza for `.claude/settings.local.json`:
+
+   ```json
+   {
+     "claudeMdExcludes": [
+       "/home/michael/workspace/CLAUDE.md",
+       "/home/michael/workspace/platxa/CLAUDE.md"
+     ]
+   }
+   ```
+
+   This is a suggestion only — never write to `settings.local.json` automatically.
+
+4. **User-scope CLAUDE.md** at `~/.claude/CLAUDE.md`: if present, note it in the preflight report (informational; user memory is intentional, not a warning).
+
+Proceed to Step 1 regardless of findings. The preflight is informational and never blocks generation.
+
 ### Step 1: Analyze the Project
 
 Dispatch the **project-analyzer** agent to deeply analyze the codebase:
