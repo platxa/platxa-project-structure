@@ -4,45 +4,14 @@ description: Analyze any codebase and auto-generate Claude Code project structur
 
 # Project Structure Setup
 
-Analyze the current project and generate a complete Claude Code project structure.
+Analyze the current project and generate a complete Claude Code project structure: path-scoped rules in `.claude/rules/`, project-specific skills in `.claude/skills/`, domain-matched subagents in `.claude/agents/`, an optimized `CLAUDE.md`, and copy-paste-ready hook suggestions.
 
 ## Flags
 
 | Flag | Effect |
 |------|--------|
-| `--audit` | Analyze existing rules for staleness (see [Audit Mode](#audit-mode)) |
-| `--dry-run` | Show what would be created without writing any files |
-
-## Dry-Run Mode
-
-When invoked with `--dry-run`, execute the full analysis pipeline (Steps 1-2) but **skip all file writes** in Steps 3-7. Instead, collect the list of files that *would* be created and print a preview report:
-
-```
-+======================================================================+
-|  DRY RUN — No files will be created                                  |
-+======================================================================+
-
-Project: my-api
-Stack:   Python + FastAPI | pytest | ruff
-
-Would create:
-  → .claude/rules/api.md              (paths: src/api/**)
-  → .claude/rules/auth.md             (paths: src/auth/**)
-  → .claude/rules/python.md           (paths: **/*.py)
-  → .claude/skills/run-tests/SKILL.md (pytest -v)
-  → .claude/skills/lint/SKILL.md      (ruff check --fix)
-  → .claude/agents/security-reviewer.md
-  → CLAUDE.md                         (45 lines)
-
-Would skip (already exist):
-  ⊘ .claude/rules/config.md
-
-Score: 15% → 87% (+72%) if applied
-
-Run without --dry-run to create these files.
-```
-
-All analysis, scoring, and hook suggestions are computed and shown. Only file creation is suppressed.
+| `--audit` | Analyze existing rules for staleness — see @references/audit.md |
+| `--dry-run` | Show what would be created without writing any files — see @references/dry-run.md |
 
 ## Execution Protocol
 
@@ -73,9 +42,9 @@ Score the project 0-100 based on existing structure:
 
 ### Step 3: Generate .claude/rules/ Files
 
-For each module detected by the analyzer:
+For each module detected by the analyzer, generate a path-scoped rule file. See @references/templates.md for the language template selection table, framework append rules, database substitution map, and the full token reference.
 
-**Activation mode selection**: Determine whether rules should be path-scoped or always-on based on project size:
+**Activation mode selection** — choose path-scoped vs always-on based on project size:
 
 | Condition | Mode | Frontmatter |
 |-----------|------|-------------|
@@ -84,70 +53,36 @@ For each module detected by the analyzer:
 | Monorepo (any size) | Path-scoped | Always path-scoped — monorepos have too many files for always-on |
 
 Log the activation mode decision in the final report:
+
 ```
 Activation mode: path-scoped (5 modules detected)
 ```
-or:
-```
-Activation mode: always-on (2 modules — all rules load every session)
-```
 
-When generating in **always-on mode**, strip the `paths:` YAML frontmatter from the template output. The rule content stays the same, only the scoping changes.
+When generating in **always-on mode**, strip the `paths:` YAML frontmatter from the template output. The rule content stays the same; only the scoping changes.
 
 **Monorepo handling**: If `monorepo.detected` is true, each workspace package is a module. Use the full relative path from the repo root (e.g., `packages/frontend`) as `{{MODULE_PATH}}`. For monorepos with mixed languages (e.g., TypeScript frontend + Python API), select the template matching **each package's language**, not the project-wide primary language.
 
-1. Select the template matching the module's language:
-   - Python → `templates/rules/python.md`
-   - TypeScript/JavaScript → `templates/rules/typescript.md`
-   - Go → `templates/rules/go.md`
-   - Rust → `templates/rules/rust.md`
-   - Other → `templates/rules/generic.md`
+For each module:
 
-2. Substitute all template tokens:
-   - `{{MODULE_NAME}}` → module name (capitalized)
-   - `{{MODULE_PATH}}` → relative path to module (for monorepos: full path from repo root, e.g., `packages/api`)
-   - `{{FILE_COUNT}}` → number of files
-   - `{{LINE_COUNT}}` → lines of code
-   - `{{COMPLEXITY}}` → S/M/L/XL
-   - `{{TEST_COMMAND}}` → detected test command
-   - `{{LINT_COMMAND}}` → detected lint command
-   - `{{LINTER}}` → linter name
-   - `{{TYPE_CHECKER}}` → type checker name
-   - `{{FORMATTER}}` → formatter name
-   - `{{TEST_FRAMEWORK}}` → test framework name
-   - `{{DATABASE_RULES}}` → database-specific rules from `templates/rules/database-{type}.md` (postgresql, mongodb, redis). If multiple databases detected, concatenate all matching templates. If none detected, substitute with empty string.
-   - `{{SHARP_EDGES}}` → formatted sharp edge findings for this module
-
-3. Format sharp edges as:
-   ```markdown
-   ## Sharp Edges
-   - **shell=True** at `ssh_tunnel.py:42` — potential command injection risk
-   - **hardcoded password** at `settings.py:29` — use environment variables instead
-   ```
-
-4. Write to `.claude/rules/{module_name}.md`
-   - **NEVER overwrite** existing files — skip with a message
-
-5. Also generate a language-wide rule file (e.g., `.claude/rules/python.md` for all *.py files)
-
-6. **Framework-specific rules**: If a framework is detected, append the matching framework template content to the language-wide rule file:
-   - Next.js (App Router) → `templates/rules/framework-nextjs-approuter.md`
-   - FastAPI → `templates/rules/framework-fastapi.md`
-   - Django → `templates/rules/framework-django.md`
-   - Express/Node.js → `templates/rules/framework-express.md`
-   
-   Append (don't replace) to the language rule file. If no framework detected, skip.
+1. Select the language template per the table in @references/templates.md
+2. Substitute all template tokens per the token map in @references/templates.md
+3. Format sharp edges as a markdown list under a `## Sharp Edges` heading
+4. Write to `.claude/rules/{module_name}.md` — **NEVER overwrite** existing files (skip with a message)
+5. Also generate a language-wide rule file (e.g., `.claude/rules/python.md` for all `*.py`)
+6. **Framework append**: if a framework is detected, append the matching framework template content to the language-wide rule file (do not replace)
 
 ### Step 4: Generate .claude/skills/ Files
 
 For each applicable skill template:
 
 **Progressive disclosure**: If a generated skill would exceed 30 lines, split it:
+
 - **SKILL.md** (core): Keep the description, main command, and essential instructions (under 30 lines)
 - **references/**: Move detailed documentation, examples, and edge cases into separate files
 - Link from SKILL.md using `@references/FILENAME.md` imports
 
 Example split structure:
+
 ```
 .claude/skills/run-tests/
 ├── SKILL.md              ← Core instructions (under 30 lines)
@@ -155,108 +90,83 @@ Example split structure:
     └── test-patterns.md  ← Detailed test patterns, fixtures, edge cases
 ```
 
-Example SKILL.md with import:
-```markdown
----
-description: Run the project test suite
----
-# Run Tests
-Run tests: `pytest tests/ -v`
+Generate these skills when the corresponding tool is detected:
 
-For advanced patterns and fixtures: @references/test-patterns.md
-```
+| Skill | Trigger | Tokens |
+|---|---|---|
+| `run-tests` | Test framework detected | `{{TEST_FRAMEWORK}}`, `{{TEST_COMMAND}}` |
+| `lint` | Linter detected | `{{LINT_COMMAND}}`, `{{LINT_FIX_COMMAND}}` |
+| `format-check` | Formatter detected | `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, `{{FORMAT_FIX_COMMAND}}` |
+| `typecheck` | Type checker detected | `{{TYPE_CHECKER}}`, `{{TYPE_CHECK_COMMAND}}` |
 
-This keeps token usage low — Claude only loads references/ when the user asks about advanced patterns.
-
-1. **run-tests** (always, if test framework detected):
-   - Substitute `{{TEST_FRAMEWORK}}` and `{{TEST_COMMAND}}`
-   - Write to `.claude/skills/run-tests/SKILL.md`
-
-2. **lint** (if linter detected):
-   - Substitute `{{LINT_COMMAND}}` and `{{LINT_FIX_COMMAND}}`
-   - Write to `.claude/skills/lint/SKILL.md`
-
-3. **format-check** (if formatter detected):
-   - Substitute `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, and `{{FORMAT_FIX_COMMAND}}`
-   - Common values: `ruff format --check .` / `ruff format .`, `prettier --check .` / `prettier --write .`, `gofmt -l .` / `gofmt -w .`, `cargo fmt --check` / `cargo fmt`
-   - Write to `.claude/skills/format-check/SKILL.md`
-
-4. **typecheck** (if type checker detected):
-   - Substitute `{{TYPE_CHECKER}}` and `{{TYPE_CHECK_COMMAND}}`
-   - Common values: `pyright .`, `tsc --noEmit`, `go vet ./...`
-   - Write to `.claude/skills/typecheck/SKILL.md`
+See @references/templates.md for common command values per language.
 
 Skip existing files — never overwrite.
 
 ### Step 5: Generate .claude/agents/ Files
 
-Generate domain-specific subagent definitions based on detected modules. Match module names/paths against known domain patterns:
-
-| Module Pattern | Agent Template | Generated File |
-|---------------|----------------|----------------|
-| `auth`, `security`, `login`, `oauth` | `templates/agents/security-reviewer.md` | `.claude/agents/security-reviewer.md` |
-| `api`, `routes`, `endpoints`, `controllers` | `templates/agents/api-tester.md` | `.claude/agents/api-tester.md` |
-| `db`, `database`, `models`, `migrations`, `orm` | `templates/agents/db-reviewer.md` | `.claude/agents/db-reviewer.md` |
-
-Also trigger agent generation from detected databases:
-- If `databases[]` is non-empty → generate `db-reviewer` agent
+Generate domain-matched subagents based on detected modules and databases. The full pattern → template mapping is in @references/templates.md.
 
 For each matched agent:
+
 1. Select the template from `templates/agents/`
 2. Substitute `{{MODULE_NAME}}` and `{{MODULE_PATH}}` with the matching module
 3. Write to `.claude/agents/{agent-name}.md`
 4. **NEVER overwrite** existing files — skip with a message
 
-If no modules match any domain pattern, skip this step entirely.
+If no modules match any domain pattern and `databases[]` is empty, skip this step entirely.
 
 ### Step 6: Audit or Generate CLAUDE.md
 
-
 **If CLAUDE.md exists:**
+
 - Count lines
 - If >200 lines: report as bloated with suggestions to trim
 - If well-structured: report as good, no changes needed
 - **NEVER modify** an existing CLAUDE.md — only report
 
 **If CLAUDE.md does NOT exist:**
-- Select template matching the project's language
+
+- Select the template matching the project's primary language from `templates/claude-md/`
 - Substitute tokens from analysis
 - For `{{ARCHITECTURE_SUMMARY}}`, generate a brief description of the project's module structure
-- **@import handling**: The templates include `@README.md`, `@package.json`, `@pyproject.toml`, or `@go.mod` imports. Before writing, verify the referenced file exists. If it does NOT exist, remove that `@import` line from the output. Never generate imports pointing to non-existent files.
+- **@import handling**: The templates include `@README`, `@package.json`, `@pyproject.toml`, or `@go.mod` imports. Before writing, verify the referenced file exists. If it does NOT exist, remove that `@import` line from the output. Never generate imports pointing to non-existent files.
 - Write to `CLAUDE.md`
 
 ### Step 7: Generate Hook Suggestions
 
-Analyze the sharp edges from the analysis report and generate concrete hook suggestions. Reference `templates/hooks/sharp-edge-hooks.md` for the pattern-to-hook mapping.
+Analyze the sharp edges from the analysis report and generate concrete hook suggestions. Reference `templates/hooks/sharp-edge-hooks.md` for the canonical pattern-to-hook mapping (uses real Claude Code event names: `PreToolUse`, `PostToolUse`, `InstructionsLoaded`).
 
-**For each sharp edge**, match the pattern to a hook type:
+**For each sharp edge**, match the pattern to a hook config from the template:
 
-| Sharp Edge Pattern | Hook Type | Event |
-|--------------------|-----------|-------|
-| `shell=True`, `exec(`, `eval(` | Warn on edit | `on_file_edit` |
-| Hardcoded credentials | Block on commit | `pre_commit` |
-| f-string SQL (`f"...SELECT`) | Warn on edit | `on_file_edit` |
-| `dangerouslySetInnerHTML` | Warn on edit | `on_file_edit` |
+| Sharp Edge Pattern | Event |
+|--------------------|-------|
+| `shell=True`, `exec(`, `eval(` | `PostToolUse` (warn) |
+| Hardcoded credentials | `PreToolUse` on `Bash(git commit*)` (block) |
+| f-string SQL | `PostToolUse` (warn) |
+| `dangerouslySetInnerHTML` | `PostToolUse` (warn) |
 
 **Always suggest these baseline hooks** (regardless of sharp edges):
 
-1. **Lint on edit** — if linter detected, suggest running `{{LINT_COMMAND}}` on file edit for source files
-2. **Block sensitive dirs** — if migrations/, secrets/, or .env files exist, suggest blocking writes
+1. **Lint on edit** — if linter detected, suggest a `PostToolUse` hook running `{{LINT_COMMAND}}` on source-file edits
+2. **Block sensitive dirs** — if migrations/, secrets/, or .env files exist, suggest a `PreToolUse` hook blocking edits
+3. **InstructionsLoaded debug hook** — always suggest the diagnostic hook from `templates/hooks/sharp-edge-hooks.md` so users can debug which path-scoped rules are firing for which file reads (this is the canonical debug path per the Claude Code memory docs)
 
-**Output format**: Generate a JSON array of hook configs that the user can copy into `.claude/settings.json`:
+**Output format**: Print each hook config as a JSON snippet the user can copy into `.claude/settings.json`. Use the canonical Claude Code shape:
 
 ```json
 {
   "hooks": {
-    "on_file_edit": [
+    "PostToolUse": [
       {
-        "pattern": "**/*.py",
-        "command": "{{LINT_COMMAND}}"
-      }
-    ],
-    "pre_commit": [
-      {
-        "command": "grep -rn 'password.*=[\"'\\''']' --include='*.py' . && echo 'BLOCKED: Hardcoded credentials' >&2 && exit 1 || true"
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Edit(**/*.py)",
+            "command": "{{LINT_COMMAND}}"
+          }
+        ]
       }
     ]
   }
@@ -267,9 +177,7 @@ Analyze the sharp edges from the analysis report and generate concrete hook sugg
 
 ### Step 8: Calculate After Score & Report
 
-Calculate the new score using the same rubric.
-
-Print a structured report:
+Calculate the new score using the same rubric. Print a structured report:
 
 ```
 +======================================================================+
@@ -283,10 +191,8 @@ Score:   {{before_score}}% → {{after_score}}% (+{{delta}}%)
 
 Files created:
   ✓ .claude/rules/retrieval.md        (paths: src/retrieval/**)
-  ✓ .claude/rules/graph.md            (paths: src/graph/**)
   ✓ .claude/rules/python.md           (paths: **/*.py)
   ✓ .claude/skills/run-tests/SKILL.md (pytest -v)
-  ✓ .claude/skills/lint/SKILL.md      (ruff check --fix)
   ⊘ CLAUDE.md                         (already exists, 160 lines — OK)
 
 Skipped (already exist):
@@ -297,15 +203,13 @@ Sharp edges documented:
   ⚠ config/settings.py:29 — hardcoded password
 
 Suggested hooks (add to .claude/settings.json):
-  🔧 on_file_edit: Run ruff check on **/*.py edits
-  🔧 on_file_edit: Warn on shell=True in connectors/**
-  🔧 pre_commit: Block hardcoded credentials
-  🔧 on_file_edit: Block writes to **/migrations/**
+  🔧 PostToolUse: Run ruff check on **/*.py edits
+  🔧 PostToolUse: Warn on shell=True in connectors/**
+  🔧 PreToolUse: Block hardcoded credentials on git commit
+  🔧 PreToolUse: Block writes to **/migrations/**
+  🔧 InstructionsLoaded: Log loaded rule files for debugging
 
-  Copy-paste config:
-  {
-    "hooks": { ... }
-  }
+  Copy-paste config: see templates/hooks/sharp-edge-hooks.md
 
 Next steps:
   1. Review generated files and customize as needed
@@ -314,62 +218,17 @@ Next steps:
   4. Run /platxa-project-structure:setup again after major refactors
 ```
 
-## Audit Mode
-
-When invoked with `--audit` (e.g., `/platxa-project-structure:setup --audit`), skip all generation steps and instead analyze existing `.claude/` structure for health issues.
-
-### Audit Steps
-
-1. **Run the project-analyzer agent** (same as Step 1) to get the current module list
-2. **Read all existing `.claude/rules/*.md` files**
-3. **Cross-reference** rules against actual modules and files:
-
-| Check | Finding | Severity |
-|-------|---------|----------|
-| Module exists but has no rule file | Gap — uncovered module | WARN |
-| Rule references a path that no longer exists | Stale rule — dead reference | ERROR |
-| Rule file exceeds 50 lines | Bloated rule | WARN |
-| Rule `paths:` glob matches zero files | Orphaned rule — no matching files | ERROR |
-| CLAUDE.md exceeds 200 lines | Bloated CLAUDE.md | WARN |
-| Skill references a command that isn't installed | Broken skill | WARN |
-
-4. **Print audit report** (no files modified):
-
-```
-+======================================================================+
-|  PROJECT STRUCTURE AUDIT                                             |
-+======================================================================+
-
-Project: {{project_name}}
-Rules:   {{rules_count}} files | Skills: {{skills_count}} | Hooks: {{hook_count}}
-
-Health:  {{healthy_count}}/{{total_checks}} checks passed
-
-Issues found:
-  ✗ ERROR  .claude/rules/old-module.md — paths match 0 files (module deleted?)
-  ✗ ERROR  .claude/rules/api.md:15 — references src/api/v1/ which no longer exists
-  ⚠ WARN   .claude/rules/database.md — 67 lines (exceeds 50-line limit)
-  ⚠ WARN   No rule for module: src/notifications/ (12 files, 890 lines)
-
-No issues:
-  ✓ .claude/rules/auth.md — 28 lines, paths valid
-  ✓ .claude/rules/python.md — 22 lines, paths valid
-  ✓ .claude/skills/run-tests/SKILL.md — command found
-  ✓ CLAUDE.md — 85 lines (OK)
-
-Suggestions:
-  1. Delete .claude/rules/old-module.md (orphaned)
-  2. Update paths in .claude/rules/api.md
-  3. Trim .claude/rules/database.md to under 50 lines
-  4. Run /platxa-project-structure:setup to generate rule for src/notifications/
-```
-
-**Audit NEVER modifies files** — it only reports. The user decides what to fix.
-
 ## Important Rules
 
 1. **Non-destructive**: NEVER overwrite existing files. Skip and report.
 2. **Accurate**: Use exact numbers from analysis, never estimate.
 3. **Practical**: Generated rules should reference actual tools in the project.
 4. **Concise**: Each rule file should be under 50 lines.
-5. **Path-scoped**: Every rule file MUST have YAML frontmatter with `paths:` targeting the specific module.
+5. **Path-scoped**: Every rule file MUST have YAML frontmatter with `paths:` targeting the specific module (unless project has <3 modules — see Step 3).
+6. **Canonical hook events**: Generated hook suggestions MUST use real Claude Code event names (`PreToolUse`, `PostToolUse`, `InstructionsLoaded`) — never invent event names.
+
+## Reference Material
+
+- @references/dry-run.md — `--dry-run` mode behavior and output format
+- @references/audit.md — `--audit` mode health checks and output format
+- @references/templates.md — template selection tables, token reference, common command values
