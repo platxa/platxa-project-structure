@@ -126,6 +126,7 @@ For each module:
 5. Also generate a language-wide rule file (e.g., `.claude/rules/python.md` for all `*.py`)
 6. **Framework append**: if a framework is detected, append the matching framework template content to the language-wide rule file (do not replace)
 7. **Infrastructure rule**: if `infrastructure.docker`, `infrastructure.kubernetes`, or `infrastructure.terraform` is true in the analyzer report, also generate `.claude/rules/infra.md` from `templates/rules/infra.md`. The template has no tokens to substitute — write it verbatim. This rule is path-scoped to `**/Dockerfile`, `k8s/**/*.yml`, `**/*.tf`, etc., and only activates when Claude reads infra files. Skip if the target file already exists.
+8. **CI rule**: if the analyzer report shows any of `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/config.yml`, `azure-pipelines.yml`, or a `Jenkinsfile` exists, also generate `.claude/rules/ci.md` from `templates/rules/ci.md` (also verbatim). Path-scoped to CI pipeline files so it only activates when Claude reads them. Skip if the target file already exists.
 
 ### Step 4: Generate .claude/skills/ Files
 

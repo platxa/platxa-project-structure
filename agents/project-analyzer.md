@@ -191,8 +191,9 @@ Populate `infrastructure` field in the report:
 - `docker`: true if any Dockerfile or docker-compose file found
 - `kubernetes`: true if any file under k8s/, kubernetes/, manifests/, helm/, or charts/ matches *.yml/*.yaml
 - `terraform`: true if any .tf files found outside .terraform/
+- `ci`: true if any of `.github/workflows/`, `.gitlab-ci.yml`, `.circleci/config.yml`, `azure-pipelines.yml`, or `Jenkinsfile` exists
 
-If any of these flags is true, the setup skill will generate `.claude/rules/infra.md` from the infra template.
+If `docker`/`kubernetes`/`terraform` is true, the setup skill generates `.claude/rules/infra.md`. If `ci` is true, it generates `.claude/rules/ci.md`.
 
 ### Step 6: Detect Sensitive Paths
 
@@ -259,7 +260,8 @@ Return a JSON report:
   "infrastructure": {
     "docker": true,
     "kubernetes": false,
-    "terraform": false
+    "terraform": false,
+    "ci": true
   },
   "existingStructure": {
     "claudeMd": {"exists": true, "lines": 160, "bloated": false},
