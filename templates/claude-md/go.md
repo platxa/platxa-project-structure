@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See @README.md for project overview. See @go.mod for module path and dependencies.
+See @README for project overview. See @go.mod for module path and dependencies.
 
 ## Development
 

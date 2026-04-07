@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See @README.md for project overview. See @package.json for available scripts and dependencies.
+See @README for project overview. See @package.json for available scripts and dependencies.
 
 ## Development
 

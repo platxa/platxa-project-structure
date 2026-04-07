@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-See @README.md for project overview.
+See @README for project overview.
 
 ## Development
 
