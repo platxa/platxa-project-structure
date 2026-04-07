@@ -46,6 +46,7 @@ ALLOWED_TOKENS=(
   "FORMAT_COMMAND"        # alias for FORMAT_FIX_COMMAND in claude-md templates
   "DEV_COMMAND"           # derived from stack/framework (e.g. npm run dev)
   "SOURCE_GLOB"           # derived from stack.language (e.g. **/*.py)
+  "TEST_GLOB"             # derived from stack.testFramework (e.g. tests/**/*.py)
   "DATABASE_RULES"        # concatenated database template content
   "SHARP_EDGES"           # formatted from sharpEdges[] per module
 

@@ -61,6 +61,7 @@ All templates use `{{DOUBLE_BRACE}}` tokens. The setup skill substitutes them fr
 | `{{DEV_COMMAND}}` | derived from `stack.framework` / package.json | `npm run dev` |
 | `{{FORMAT_COMMAND}}` | alias for `{{FORMAT_FIX_COMMAND}}` (used in CLAUDE.md templates) | `ruff format .` |
 | `{{SOURCE_GLOB}}` | derived from `stack.language` | `**/*.py` |
+| `{{TEST_GLOB}}` | derived from `stack.testFramework` | `tests/**/*.py` |
 | `{{ARCHITECTURE_SUMMARY}}` | computed narrative from `modules[]` by setup skill | (multi-line) |
 | `{{DATABASE_RULES}}` | concatenated database templates | (multi-line) |
 | `{{SHARP_EDGES}}` | formatted from `sharpEdges[]` per module | (multi-line) |

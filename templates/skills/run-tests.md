@@ -1,6 +1,9 @@
 ---
 description: Run the project test suite and report results
 allowed-tools: Bash Read
+paths:
+  - "{{SOURCE_GLOB}}"
+  - "{{TEST_GLOB}}"
 ---
 
 # Run Tests

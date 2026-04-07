@@ -94,10 +94,19 @@ Generate these skills when the corresponding tool is detected:
 
 | Skill | Trigger | Tokens |
 |---|---|---|
-| `run-tests` | Test framework detected | `{{TEST_FRAMEWORK}}`, `{{TEST_COMMAND}}` |
-| `lint` | Linter detected | `{{LINT_COMMAND}}`, `{{LINT_FIX_COMMAND}}` |
-| `format-check` | Formatter detected | `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, `{{FORMAT_FIX_COMMAND}}` |
-| `typecheck` | Type checker detected | `{{TYPE_CHECKER}}`, `{{TYPE_CHECK_COMMAND}}` |
+| `run-tests` | Test framework detected | `{{TEST_FRAMEWORK}}`, `{{TEST_COMMAND}}`, `{{SOURCE_GLOB}}`, `{{TEST_GLOB}}` |
+| `lint` | Linter detected | `{{LINT_COMMAND}}`, `{{LINT_FIX_COMMAND}}`, `{{SOURCE_GLOB}}` |
+| `format-check` | Formatter detected | `{{FORMATTER}}`, `{{FORMAT_CHECK_COMMAND}}`, `{{FORMAT_FIX_COMMAND}}`, `{{SOURCE_GLOB}}` |
+| `typecheck` | Type checker detected | `{{TYPE_CHECKER}}`, `{{TYPE_CHECK_COMMAND}}`, `{{SOURCE_GLOB}}` |
+
+**Path-scoped activation**: Skill templates include a `paths:` frontmatter field with `{{SOURCE_GLOB}}` (and `{{TEST_GLOB}}` for run-tests). The setup skill substitutes these from the detected language so each generated skill only auto-activates when Claude is working with relevant files. Common values:
+
+| Language | `{{SOURCE_GLOB}}` | `{{TEST_GLOB}}` |
+|---|---|---|
+| Python | `**/*.py` | `tests/**/*.py` |
+| TypeScript | `**/*.{ts,tsx}` | `**/*.{test,spec}.{ts,tsx}` |
+| Go | `**/*.go` | `**/*_test.go` |
+| Rust | `**/*.rs` | `tests/**/*.rs` |
 
 See @references/templates.md for common command values per language.
 

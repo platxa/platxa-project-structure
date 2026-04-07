@@ -1,6 +1,8 @@
 ---
 description: Check and fix code formatting using {{FORMATTER}}
 allowed-tools: Bash Read Edit
+paths:
+  - "{{SOURCE_GLOB}}"
 ---
 
 # Format Check

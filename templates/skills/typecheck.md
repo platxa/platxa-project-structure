@@ -1,6 +1,8 @@
 ---
 description: Run type checking using {{TYPE_CHECKER}}
 allowed-tools: Bash Read
+paths:
+  - "{{SOURCE_GLOB}}"
 ---
 
 # Type Check
