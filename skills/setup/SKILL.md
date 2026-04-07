@@ -12,6 +12,60 @@ Analyze the current project and generate a complete Claude Code project structur
 |------|--------|
 | `--audit` | Analyze existing rules for staleness — see @references/audit.md |
 | `--dry-run` | Show what would be created without writing any files — see @references/dry-run.md |
+| `--update` | Re-run detection and fill ONLY missing slots; never modify present files — see [Update Mode](#update-mode) |
+
+## Update Mode
+
+Invoked with `--update`. Re-runs Steps 1-2 (analyze + score), then generates **only the files that do not already exist**. Every existing file is left untouched — this is the safe middle ground between blindly re-running the default setup (which skips existing files silently) and forcing a destructive rewrite (which the plugin never does).
+
+### Behavior
+
+- Steps 3-7 run as normal **except** the file-write policy: before every write, check whether the target path exists on disk. If it does, skip silently without comparing content.
+- The final report separates outcomes into three groups: **newly created** (slot was empty), **preserved** (file already existed, left untouched), and **still missing** (would have been generated but a parent path is blocked).
+- The score delta in Step 8 reflects only the newly-created files.
+
+### When to use
+
+- After adding a new module or workspace package, to scaffold its rule file without disturbing hand-edited rules for older modules.
+- After upgrading the plugin, to pick up new baseline skills or agent templates without rewriting existing ones.
+- As a periodic refresh during active development — safer than deleting `.claude/` and re-running.
+
+### Difference from default mode
+
+| Mode | Analyzes | Writes new files | Skips existing | Modifies existing | Shows dry report |
+|---|---|---|---|---|---|
+| Default | Yes | Yes | Yes (with message) | Never | No |
+| `--update` | Yes | Yes (missing slots only) | Yes (silently) | Never | No |
+| `--dry-run` | Yes | No | Reported | Never | Yes |
+| `--audit` | Yes | No | N/A (audit reads existing) | Never | Yes (health report) |
+
+### Output format
+
+```
++======================================================================+
+|  UPDATE MODE                                                         |
++======================================================================+
+
+Project: my-api
+Stack:   Python + FastAPI | pytest | ruff
+
+Score:   62% → 78% (+16% from newly created files)
+
+Newly created:
+  ✓ .claude/rules/notifications.md    (new module detected)
+  ✓ .claude/skills/typecheck/SKILL.md (new baseline skill)
+
+Preserved (already exist — not touched):
+  ⊘ .claude/rules/api.md
+  ⊘ .claude/rules/auth.md
+  ⊘ .claude/rules/python.md
+  ⊘ CLAUDE.md (160 lines)
+
+Still missing (reason):
+  (none)
+
+Run without --update to see the full generation plan.
+```
 
 ## Execution Protocol
 
